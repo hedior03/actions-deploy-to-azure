@@ -18,12 +18,13 @@ jobs:
         run: |
           echo "Success running the workflow"
 
-  debug:
+  did-not-build:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'stage') }}
     steps:
       - name: Dump GitHub event payload
         run: |
           echo "GitHub Event:"
           cat $GITHUB_EVENT_PATH
           echo "Pull Request Object:"
-          jq '.pull_request.labels[].name' $GITHUB_EVENT_PATH
+          jq '.pull_request.labels[]' $GITHUB_EVENT_PATH
