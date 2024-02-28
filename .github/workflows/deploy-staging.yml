@@ -26,4 +26,4 @@ jobs:
           echo "GitHub Event:"
           cat $GITHUB_EVENT_PATH
           echo "Pull Request Object:"
-          jq .pull_request $GITHUB_EVENT_PATH
+          jq '.pull_request.labels[].name' $GITHUB_EVENT_PATH
