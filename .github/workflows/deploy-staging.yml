@@ -21,8 +21,9 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
-      - name: pull request object
+      - name: Dump GitHub event payload
         run: |
-          echo "${PR_OBJ}" 
-          env: 
-            - PR_OBJ: ${{ github.event.pull_request }}
+          echo "GitHub Event:"
+          cat $GITHUB_EVENT_PATH
+          echo "Pull Request Object:"
+          jq .pull_request $GITHUB_EVENT_PATH
