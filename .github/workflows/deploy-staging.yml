@@ -23,4 +23,6 @@ jobs:
     steps:
       - name: pull request object
         run: |
-          echo "${{ github.event.pull_request }}"
+          echo "${PR_OBJ}" 
+          env: 
+            - PR_OBJ: ${{ github.event.pull_request }}
