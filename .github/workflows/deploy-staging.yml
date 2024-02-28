@@ -1,0 +1,26 @@
+name: Deploy to Azure WebApps
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ contains(github.event.pull_request.*.name, "stage") }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: success mesage
+        run: |
+          echo "Success running the workflow"
+
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: pull request object
+        run: |
+          echo "${{ github.event.pull_request }}"
