@@ -5,6 +5,11 @@ on:
     types: [labeled]
   workflow_dispatch:
 
+env:
+  IMAGE_REGISTRY_URL: ghcr.io
+  DOCKER_IMAGE_NAME: hedior03-azure-ttt
+  AZURE_WEBAPP_NAME: hedior03-ttt-app
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -14,9 +19,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: success mesage
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: npm install and build webpack
         run: |
-          echo "Success running the workflow"
+          npm run install
+          npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: webpack artifacts
+          path: ./public/
 
   did-not-build:
     runs-on: ubuntu-latest
@@ -28,3 +41,64 @@ jobs:
           cat $GITHUB_EVENT_PATH
           echo "Pull Request Object:"
           jq '.pull_request.labels[]' $GITHUB_EVENT_PATH
+
+  build-docker-image:
+    runs-on: ubuntu-latest
+    needs: build
+    name: Build image and store in GitHub Container Registry
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download built artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: webpack artifacts
+          path: ./public/
+      - name: Login in GHCR (docker-cli)
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.IMAGE_REGISTRY_URL }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extracts metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.IMAGE_REGISTRY_URL }}/${{ github.repository }}/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=sha,format=long,prefix=
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy-to-azure:
+    runs-on: ubuntu-latest
+    needs: build-docker-image
+    name: Deploy app container to Azure
+    steps:
+      - name: Login azure via cli
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Azure cli login to GHCR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.IMAGE_REGISTRY_URL }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy web app container
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          images: ${{ env.IMAGE_REGISTRY_URL }}/${{ github.repository }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+      - name: Logout Azure CLI
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az logout
+            az cache purge
+            az account clear
