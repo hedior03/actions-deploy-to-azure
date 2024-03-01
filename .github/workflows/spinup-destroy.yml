@@ -1,4 +1,4 @@
-name: Confugure Azure environment
+name: Configure Azure environment
 
 on:
   workflow_dispatch:
