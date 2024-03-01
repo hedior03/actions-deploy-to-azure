@@ -39,6 +39,10 @@ jobs:
 
     name: Build image and store in GitHub Registry
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
