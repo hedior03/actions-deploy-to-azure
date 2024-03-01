@@ -10,10 +10,6 @@ env:
   DOCKER_IMAGE_NAME: hedior03-azure-ttt
   AZURE_WEBAPP_NAME: hedior03-ttt-app
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
   build:
     if: contains(github.event.pull_request.labels.*.name, 'stage')
